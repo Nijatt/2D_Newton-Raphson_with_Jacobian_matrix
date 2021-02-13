@@ -1,0 +1,151 @@
+#Problem 3.12
+
+'''Problem :
+        Develop a subprogram that implements the Newton method to solve f(x)= 0,
+        where both f and x are l-dimensional vectors. Test the subprogram with given functions.
+'''
+#Imported important packages for numerical calculations and graphicing.
+from mpl_toolkits import mplot3d
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+#===========Test functions===========
+'''This is some test functions 
+    which has been used while generating the program.
+     I did not delete them it it might be usefull in further modifications.'''
+def test1(x1,x2):
+    return x1**2+x1*x2+x2**2-7
+def test2(x1,x2):
+    return x1**3+x2**3-9
+def f(x):
+    return x**2-4
+#=======Funtions=========================
+'''Given functions of set for finding the root.'''
+def f1(x1,x2):
+    return np.exp(x1**2)*np.log(x2)-x1**2
+def f2(x1,x2):
+    return np.exp(x2) * np.log(x1) - x2 ** 2
+#====================================
+''' Generating important functions for 1 variable and 2 variable Newton-Rapshon method, and the methods itself.'''
+
+def derivative(f,x):
+    ''' This function returns the derivative of f(x) in two cases.
+        If x is just one input it returns f'(x)=df(x)/dx.
+        In other case, if x is an array of two elements,
+          which means there is two variable in the function and returns
+          f'(x1,x2)=df(x1)/dx1 + df(x2)/dx2 '''
+    h = 0.0001
+    if isinstance(x,list)==True:
+        return float(f(x[0] + h,x[1]) - f(x[0],x[1])) / float(h)+float(f(x[0],x[1]+h) - f(x[0],x[1])) / float(h)
+    else:
+        return float(f(x+h)-f(x))/float(h)
+
+def partial_derivative(f,x):
+    '''This function is very vital for generating Jacobian matrices. x=[] must be an array.
+        The program returns [df(x1)/dx1 , df(x2)/dx2]'''
+    h=0.0001
+    if isinstance(x,list)==True:
+        return float(f(x[0] + h,x[1]) - f(x[0],x[1])) / float(h),float(f(x[0],x[1]+h) - f(x[0],x[1])) / float(h)
+
+def newton_raphson_one_variable(f, x, tolerance=0.000001):
+    '''This function is example of 1 variable newton_rapshon method.
+        Returns the root of the functions by taking initial x value and checking it by tolerance.'''
+    while True:
+        x1 = x - f(x) / derivative(f, x)#newton raphson
+        t = abs(x1 - x)#cheking tolerance
+        if t < tolerance:#if smaller than tolerance then stop.
+            break
+        ''' if not smaller than tolerance then precede and 
+            inital value must be the final founded value.   '''
+        x = x1
+    return x
+
+def jacobian_matrix_2d(function,x_init):
+    ''' As it says in the problem to solve two variable functions by Newton,
+        Jacobian matrix must be generated first and at every iteration.
+         The function input: two variable f=[f1,f2] and two variable x=[x1,x2] arrays.
+          returns: [[df1(x1)/dx1 , df1(x2)/dx2],
+                    [df2(x1)/dx1 , df2(x2)/dx2]]  '''
+    J_0 = np.array([[partial_derivative(function[0], x_init)[0], partial_derivative(function[0], x_init)[1]],
+                    [partial_derivative(function[1], x_init)[0], partial_derivative(function[1], x_init)[1]]])
+    return J_0
+
+def function_matrix_2d(f,x):
+    ''' The function input: two variable f=[f1,f2] and two variable x=[x1,x2] arrays.
+        return: [f1(x1,x2) , f2(x1,x2)]'''
+    return np.array([f[0](x[0],x[1]),f[1](x[0],x[1])])
+print(function_matrix_2d([f1,f2],[1.55963579 ,1.23815138]))
+def newton_raphson_two_variable(function1,function2,x1_init,x2_init,tolerance=0.000001):
+    ''' Two variebled Newton-Raphson method.'''
+
+    F_matrix=np.array([function1,function2])  #Creating Function matrix
+    x_matrix=[x1_init,x2_init] #Create initial value x values
+
+    while True:
+        ''' While tolerances does not satisfy solution it runs. '''
+        new_x_matrix=x_matrix-np.matmul(np.linalg.inv(jacobian_matrix_2d(F_matrix,x_matrix)),function_matrix_2d(F_matrix,x_matrix))
+
+        t1 = abs(new_x_matrix[0] - x_matrix[0])#Check tolerance for x1
+        t2=abs(new_x_matrix[1] - x_matrix[1])#Check tolerance for x2
+
+        if t1 < tolerance and t2 < tolerance:
+            #If tolerances satisfies then stop the loop.
+            break
+
+        x_matrix=[new_x_matrix[0],new_x_matrix[1]]#if not repeat.
+
+    return new_x_matrix
+
+#===============================Tests and Graph===================================
+print("Test attempt #1=============================")
+a1,b1=2,2
+print("inital values; x1=",a1," x2=",b1 )
+values1=newton_raphson_two_variable(f1,f2,a1,b1)
+print("Generated values are; x1=",values1[0]," x2=",values1[1])
+proff_solution1=function_matrix_2d([f1,f2],values1)
+print("Solution; f1(x1,x2)=",proff_solution1[0]," f2(x1,x2)=",proff_solution1[1])
+
+print("Test attempt #2=============================")
+a2,b2=1.1,2.3
+print("inital values; x1=",a2," x2=",b2 )
+values2=newton_raphson_two_variable(f1,f2,a2,b2)
+print("Generated values are; x1=",values2[0]," x2=",values2[1])
+proff_solution2=function_matrix_2d([f1,f2],values2)
+print("Solution; f1(x1,x2)=",proff_solution2[0]," f2(x1,x2)=",proff_solution2[1])
+
+#===3D function plot of given functions========
+fig = plt.figure()
+ax = plt.axes(projection='3d')
+
+# Data for a three-dimensional line
+xline = np.linspace(0,3,30)
+yline = np.linspace(0,3,30)
+
+ax.set_xlim(-3, 3); ax.set_ylim(-3, 3); ax.set_zlim(-30, 30);
+z1=[]
+z2=[]
+x=[]
+y=[]
+
+for i in xline[1:]:
+    for j in yline[1:]:
+        z1.append(f1(i,j))
+        z2.append(f2(i,j))
+        x.append(i)
+        y.append(j)
+
+
+'''READ THIS:
+    if you want to see graphs separetly, 
+    just put "#" in front of the line which you dont want to run.
+    To plot the both of them run both lines in the same time.'''
+
+ax.scatter(np.array(x),np.array(y),np.array(z1),color='Green')
+ax.scatter(np.array(x),np.array(y),np.array(z2),color='blue')
+plt.xlabel('x1', fontsize=18)
+plt.ylabel('x2', fontsize=18)
+plt.show()
+
+
+
